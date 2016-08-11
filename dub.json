@@ -7,12 +7,19 @@
 	"copyright": "Copyright © 2016, tosuke",
 	"license": "MIT",
 	"dependencies":{
-		"derelict-gl3":"*",
-		"derelict-glfw3":"*",
-		"gl3n":"*",
-		"derelict-fi":"*",
+		"derelict-sdl2":"~master",
 		"mathed":"*"
 	},
 	"targetPath":"bin",
-	"workingDirectory":"bin"
+	"workingDirectory":"bin",
+	"sourcePaths":[],
+
+	"configurations":[
+		{
+			"name":"encoder",
+			"targetPath":"vqEncoder",
+			"sourcePaths":["source/encoder"],
+			"targetType":"executable"
+		}
+	]
 }
