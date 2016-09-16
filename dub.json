@@ -7,8 +7,7 @@
 	"copyright": "Copyright © 2016, tosuke",
 	"license": "MIT",
 	"dependencies":{
-		"derelict-sdl2":"~master",
-		"mathed":"*"
+		"derelict-sdl2":"*"
 	},
 	"targetPath":"bin",
 	"workingDirectory":"bin",
@@ -17,9 +16,10 @@
 	"configurations":[
 		{
 			"name":"encoder",
-			"targetPath":"vqEncoder",
+			"targetPath":"bin",
 			"sourcePaths":["source/encoder"],
-			"targetType":"executable"
+			"targetType":"executable",
+			"buildOptions":["inline", "optimize"]
 		}
 	]
 }

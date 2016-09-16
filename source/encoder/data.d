@@ -30,7 +30,7 @@ struct Image{
   private size_t width_, height_;
   @property{
 
-    public const(Color[][]) pixels(){return cast(const(Color[][]))(pixels_);}
+    public Color[][] pixels(){return pixels_;}
 
     public size_t width(){return width_;}
     private void width(size_t a){width_ = a;}
@@ -57,13 +57,20 @@ struct Image{
     pixels_[x][y] = value;
   }
   Image opIndex(in size_t[2] x, in size_t[2] y){
-    auto p = new Color[][](x[1] - x[0], y[1] - y[0]);
+    auto image = Image(x[1] - x[0], y[1] - y[0]);
     foreach(cx; x[0]..x[1]){
       foreach(cy; y[0]..y[1]){
-        p[cx - x[0]][cy - y[0]] = pixels[cx][cy];
+        image[cx - x[0], cy - y[0]] = this[cx, cy];
       }
     }
-    return Image(p);
+    return image;
+  }
+  void opIndexAssign(Image value, in size_t[2] x, in size_t[2] y){
+    foreach(cx; x[0]..x[1]){
+      foreach(cy; y[0]..y[1]){
+        this[cx, cy] = value[cx - x[0], cy - y[0]];
+      }
+    }
   }
 
   size_t[2] opSlice(size_t dim)(size_t begin, size_t end) if(0 <= dim && dim < 2)
@@ -125,4 +132,57 @@ SDL_Surface* toSurface(Image image){
 
   return SDL_CreateRGBSurfaceFrom(cast(void*)pixelData.ptr, image.width.to!int, image.height.to!int, 32, image.width.to!int * 4,
                                   0xff000000, 0x00ff0000, 0x0000ff00, 0x000000ff);
+}
+
+//ブロック
+import std.typecons;
+alias Vec2 = Tuple!(int, "x", int, "y");
+struct Block{
+  Image image;
+  Vec2 pos;
+
+  alias image this;
+}
+
+Block[] toBlocks(Image img, int w, int h){
+  assert(img.width % w == 0);
+  assert(img.height % h == 0);
+
+  import std.array;
+  Appender!(Block[]) blocks;
+  for(int y = 0; y < img.height; y += h){
+    for(int x = 0; x < img.width; x += w){
+      Block block;
+      block.image = img[x..x + w, y..y + h];
+      block.pos.x = x;
+      block.pos.y = y;
+      blocks ~= block;
+    }
+  }
+
+  return blocks.data;
+}
+
+Image toImage(Block[] blocks, int w, int h, int bw, int bh){
+  auto img = Image(w, h);
+  foreach(a; blocks){
+    auto x = a.pos.x; auto y = a.pos.y;
+    img[x..x + bw, y..y + bh] = a.image;
+  }
+  return img;
+}
+//ベクトル
+struct Vector{
+  float[64] vec;
+  Vec2 pos;
+
+  //alias vec this;
+
+  Vector opBinary(string op)(Vector a){
+    Vector b;
+    import std.algorithm, std.range, std.array;
+    auto vec = zip(this.vec[], a.vec[]).map!(a => mixin("a[0]"~op~"a[1]")).array;
+    b.vec[] = vec[];
+    return b;
+  }
 }

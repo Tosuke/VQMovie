@@ -4,8 +4,11 @@ import encoder.imports;
 import encoder.renderer;
 import encoder.decoder;
 import encoder.data;
+import encoder.clustering;
 
 import derelict.sdl2.sdl;
+
+import std.algorithm, std.range, std.array;
 
 class Application{
   private{
@@ -13,9 +16,9 @@ class Application{
     IDecoder decoder;
   }
   this(){
-    renderer = new Renderer("Test", 640, 480, SDL_PIXELFORMAT_RGBA8888, 8, 8);
+    renderer = new Renderer("Test", 640, 480, SDL_PIXELFORMAT_RGBA8888, 320, 240);
 
-    auto s = SDL_LoadBMP("./bmps/ba_0100.bmp".toStringz);
+    auto s = SDL_LoadBMP("./bmps/ba_1000.bmp".toStringz);
     s.format.BytesPerPixel.log;
     s.w.log;
     s.pitch.log;
@@ -24,21 +27,24 @@ class Application{
     s.SDL_FreeSurface;
     scope(exit) surface.SDL_FreeSurface();
 
-    //surface.SDL_FillRect(new SDL_Rect(0, 0, 320, 240), surface.format.SDL_MapRGB(255, 255, 255));
-    //surface.SDL_FillRect(new SDL_Rect(0, 0, 1, 1), surface.format.SDL_MapRGB(64, 128, 255));
+    auto blocks = surface.toImage.toBlocks(8, 8);
 
-    auto pixels = new ubyte[](surface.pitch * surface.h);
-    static import core.stdc.string;
-    core.stdc.string.memcpy(pixels.ptr, surface.pixels, surface.pitch * surface.h);
+    auto vectors = blocks.map!(a => a.toVector).array;
+    renderer.update(vectors.map!(a => a.toBlock).array.toImage(320, 240, 8, 8).toSurface);
 
-    auto image = surface.toImage;
-    auto c = image[0, 0];
-    c.r.log;
-    c.g.log;
-    c.b.log;
-    auto i = image[0..8, 0..8];
+    auto result = clustering(vectors, 48, 10);
+    auto book = result.centroids.map!(a => a.toBlock.image).array;
 
-    renderer.update(i.toSurface);
+    result.indexes.map!"a.index".walkLength.log;
+    result.centroids[0].vec.log;
+
+    auto image = Image(320, 240);
+    foreach(i; result.indexes){
+      auto x = i.x; auto y = i.y;
+      image[x..x + 8, y..y + 8] = book[i.index];
+    }
+
+    renderer.update(image.toSurface);
 
     decoder = new TestDecoder();
   }
@@ -52,7 +58,7 @@ class Application{
       while(SDL_PollEvent(&e)){
         switch(e.type){
           case SDL_KEYDOWN, SDL_QUIT:
-            running = false;
+            //running = false;
             break;
           default:
             break;
@@ -69,41 +75,33 @@ class Application{
   }
 }
 
-
-import std.experimental.ndslice;
-SDL_Color[][] convertPixelData(SDL_Surface* surface)
-  in{
-    assert(surface.format.format == SDL_PIXELFORMAT_RGB888);
-  }
-  body{
-    import std.range, std.algorithm;
-    const p = cast(ubyte*)(surface.pixels);
-    const ubyte[] data = p[0..surface.pitch * surface.h];
-    auto pixels = new SDL_Color[][](surface.h, surface.w); //[y, x]
-    auto pixeldata = cast(SDL_Color[])pixels.ptr[0..surface.w * surface.h];
-    foreach(a; data.chunks(4).enumerate){
-      SDL_Color c;
-      c.a = a.value[3];
-      c.r = a.value[2];
-      c.g = a.value[1];
-      c.b = a.value[0];
-      /*
-      c.a = a.value[0];
-      c.r = a.value[1];
-      c.g = a.value[2];
-      c.b = a.value[3];
-      */
-      pixeldata[a.index] = c;
+Vector toVector(Block blk){
+  //モノクロに限る
+  Vector vec;
+  vec.pos = blk.pos;
+  foreach(y; 0..8){
+    foreach(x; 0..8){
+      auto c = blk.image[x, y];
+      vec.vec[x + y * 8] = (c.r + c.g + c.b) / 3;
     }
-
-    return pixels;
   }
+  return vec;
+}
 
-//auto convertPixelData()
-
-unittest{
-  import std.algorithm, std.range;
-  auto a = [1, 2, 3, 4].sliced(2, 2);
-  a[].log;
-  a.byElement.log;
+Block toBlock(Vector v){
+  Block blk;
+  blk.image = Image(8, 8);
+  blk.pos = v.pos;
+  foreach(y; 0..8){
+    foreach(x; 0..8){
+      ubyte a = v.vec[x + y * 8].to!uint & 0xff;
+      Color c;
+      c.r = a;
+      c.g = a;
+      c.b = a;
+      c.a = 0;
+      blk[x, y] = c;
+    }
+  }
+  return blk;
 }
