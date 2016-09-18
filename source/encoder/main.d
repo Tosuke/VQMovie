@@ -32,7 +32,7 @@ class Application{
     auto vectors = blocks.map!(a => a.toVector).array;
     renderer.update(vectors.map!(a => a.toBlock).array.toImage(320, 240, 8, 8).toSurface);
 
-    auto result = clustering(vectors, 48, 10);
+    /*auto result = clustering(vectors, 48, 10);
     auto book = result.centroids.map!(a => a.toBlock.image).array;
 
     result.indexes.map!"a.index".walkLength.log;
@@ -45,7 +45,7 @@ class Application{
     }
 
     renderer.update(image.toSurface);
-
+    */
     decoder = new TestDecoder();
   }
   ~this(){
@@ -58,7 +58,7 @@ class Application{
       while(SDL_PollEvent(&e)){
         switch(e.type){
           case SDL_KEYDOWN, SDL_QUIT:
-            //running = false;
+            running = false;
             break;
           default:
             break;
