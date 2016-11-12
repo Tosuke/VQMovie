@@ -1,0 +1,3 @@
+[submodule "cv4d"]
+	path = cv4d
+	url = git@github.com:Tosuke/cv4d.git
