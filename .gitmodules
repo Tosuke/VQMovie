@@ -1,3 +1,6 @@
 [submodule "cv4d"]
 	path = cv4d
 	url = git@github.com:Tosuke/cv4d.git
+[submodule "numd"]
+	path = numd
+	url = https://github.com/Tosuke/numd.git
